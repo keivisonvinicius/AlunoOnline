@@ -1,5 +1,6 @@
 package br.com.alunoonline.api.controller;
 
+import br.com.alunoonline.api.model.Aluno;
 import br.com.alunoonline.api.model.Professor;
 import br.com.alunoonline.api.service.ProfessorService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +29,13 @@ public class ProfessorControler {
     @ResponseStatus(HttpStatus.OK)
     public Optional<Professor> buscarProfessorPorId(@PathVariable Long id){return professorService.buscarProfessorPorId(id);}
 
-    @DeleteMapping
+    @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deletarProfessor(@PathVariable Long id){professorService.deletarProfessorPorId(id);}
+    public void deletarProfessorPorId(@PathVariable Long id){professorService.deletarProfessorPorId(id);}
+
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void atualizarProfessorPorId(@PathVariable Long id, @RequestBody Professor professor) {
+        professorService.atualizarProfessorPorId(id, professor);
+    }
 }
