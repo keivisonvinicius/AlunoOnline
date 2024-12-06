@@ -6,9 +6,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.jpa.domain.Specification;
+import jakarta.persistence.criteria.*;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 @Service
 public class AlunoService {
@@ -33,26 +45,44 @@ public class AlunoService {
     }
 
     public void atualizarAlunoPorId(Long id, Aluno aluno) {
-        // PRIMEIRO PASSO: VER SE O ALUNO EXISTE NO BD
         Optional<Aluno> alunoDoBancoDeDados = buscarAlunoPorId(id);
 
-        // E SE NÃO EXISTIR???
         if (alunoDoBancoDeDados.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado do banco de dados");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Aluno não encontrado no banco de dados");
         }
 
-        // SE CHEGAR AQUI, SIGNIFICA QUE EXISTE ALUNO! ENTÃO
-        // VOU ARMAZENA-LO EM UMA VARIAVEL
+        // Atualiza os atributos do aluno
         Aluno alunoEditado = alunoDoBancoDeDados.get();
-
-        // COM ESSE ALUNO EDITADO DE CIMA, FAÇO
-        // OS SETS NECESSÁRIOS PARA ATUALIZAR OS ATRIBUTOS DELE.
         alunoEditado.setNome(aluno.getNome());
         alunoEditado.setCpf(aluno.getCpf());
         alunoEditado.setEmail(aluno.getEmail());
 
-        // COM O ALUNO TOTALMENTE EDITADO ACIMA
-        // EU DEVOLVO ELE EDITADO/ATUALIZADO PARA O BANCO DE DADOS
+        // Salva o aluno atualizado
         alunoRepository.save(alunoEditado);
     }
+
+    public List<Aluno> pesquisar(String nome, String email, String cpf) {
+        return alunoRepository.findAll(new Specification<Aluno>() {
+            @Override
+            public Predicate toPredicate(Root<Aluno> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+                List<Predicate> predicates = new ArrayList<>();
+
+                if (nome != null && !nome.isEmpty()) {
+                    predicates.add(cb.like(cb.lower(root.get("nome")), "%" + nome.toLowerCase() + "%"));
+                }
+
+                if (email != null && !email.isEmpty()) {
+                    predicates.add(cb.like(cb.lower(root.get("email")), "%" + email.toLowerCase() + "%"));
+                }
+
+                if (cpf != null && !cpf.isEmpty()) {
+                    predicates.add(cb.equal(root.get("cpf"), cpf));
+                }
+
+                return cb.and(predicates.toArray(new Predicate[0]));
+            }
+        });
+    }
 }
+
+
